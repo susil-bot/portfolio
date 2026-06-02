@@ -1,7 +1,7 @@
 {
   "name": "portfolio",
   "description": "Portfolio site for Sobhana Susil",
-  "repository": "https://github.com/susil-bot/portfoliov1",
+  "repository": "https://github.com/susil-bot/portfolio",
   "author": "Sobhana Susil",
   "sideEffects": false,
   "type": "module",
@@ -10,7 +10,7 @@
     "dev": "node ./scripts/dev.cjs && remix vite:dev",
     "start": "wrangler pages dev ./build/client",
     "postinstall": "node ./scripts/draco.cjs",
-    "deploy": "npm run build && wrangler pages deploy build/client --project-name portfoliov1"
+    "deploy": "npm run build && wrangler pages deploy build/client --project-name portfolio"
   },
   "dependencies": {
     "@aws-sdk/client-ses": "^3.515.0",
