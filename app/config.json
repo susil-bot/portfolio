@@ -1,0 +1,20 @@
+{
+  "name": "Sobhana Susil",
+  "role": "Software Engineer",
+"disciplines": [
+  "Healthcare",
+  "Ecommerce",
+  "Publishing",
+  "AI",
+  "UI/UX",
+  "Fullstack"
+],
+  "email": "sobhanasusil064@gmail.com",
+  "phone": "9344538246",
+  "location": "Velachery, Chennai, TN",
+  "linkedin": "sobhana-susil",
+  "github": "sobhanasusil",
+  "repo": "https://github.com/sobhanasusil",
+  "resume": "/Sobhana_Susil_Resume.pdf",
+  "ascii": " ____        _     _                       \n/ ___|  ___ | |__ | |__   __ _ _ __   __ _ \n\\___ \\ / _ \\| '_ \\| '_ \\ / _` | '_ \\ / _` |\n ___) | (_) | |_) | | | | (_| | | | | (_| |\n|____/ \\___/|_.__/|_| |_|\\__,_|_| |_|\\__,_|\n"
+}
