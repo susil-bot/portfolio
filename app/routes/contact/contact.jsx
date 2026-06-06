@@ -51,50 +51,37 @@ function validateMessage({ name, email, phone, notes }) {
 }
 
 async function sendContactEmail({ env, message }) {
-  const apiKey = env.BREVO_API_KEY;
-  const toEmail = env.CONTACT_TO_EMAIL || config.email;
-  const senderEmail = env.CONTACT_FROM_EMAIL || config.email;
-  const senderName = env.CONTACT_FROM_NAME || config.name;
+  const apiKey = env.RESEND_API_KEY;
 
   if (!apiKey) {
-    throw new Error('Missing BREVO_API_KEY');
+    throw new Error('Missing RESEND_API_KEY');
   }
 
-  const htmlContent = `
-    <h2>New portfolio contact message</h2>
-    <p><strong>Name:</strong> ${escapeHtml(message.name)}</p>
-    <p><strong>Email:</strong> ${escapeHtml(message.email)}</p>
-    <p><strong>Phone:</strong> ${escapeHtml(message.phone)}</p>
-    <p><strong>Notes:</strong></p>
-    <p>${escapeHtml(message.notes).replace(/\n/g, '<br />')}</p>
-  `;
-
-  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+  const response = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: {
-      accept: 'application/json',
-      'api-key': apiKey,
-      'content-type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      sender: { name: senderName, email: senderEmail },
-      to: [{ email: toEmail, name: config.name }],
-      replyTo: { email: message.email, name: message.name },
+      from: 'Portfolio Contact <onboarding@resend.dev>',
+      to: 'sobhanasusil064@gmail.com',
+      reply_to: `${message.name} <${message.email}>`,
       subject: `Portfolio contact from ${message.name}`,
-      htmlContent,
-      textContent: [
-        'New portfolio contact message',
-        `Name: ${message.name}`,
-        `Email: ${message.email}`,
-        `Phone: ${message.phone}`,
-        `Notes: ${message.notes}`,
-      ].join('\n'),
+      html: `
+        <h2>New portfolio contact message</h2>
+        <p><strong>Name:</strong> ${escapeHtml(message.name)}</p>
+        <p><strong>Email:</strong> ${escapeHtml(message.email)}</p>
+        <p><strong>Phone:</strong> ${escapeHtml(message.phone)}</p>
+        <p><strong>Notes:</strong></p>
+        <p>${escapeHtml(message.notes).replace(/\n/g, '<br />')}</p>
+      `,
     }),
   });
 
   if (!response.ok) {
     const details = await response.text();
-    throw new Error(`Brevo email failed: ${details}`);
+    throw new Error(`Resend email failed: ${details}`);
   }
 }
 
