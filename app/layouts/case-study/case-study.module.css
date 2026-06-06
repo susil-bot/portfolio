@@ -1,0 +1,82 @@
+@layer layout {
+  .caseStudy {
+    isolation: isolate;
+  }
+
+  .overview {
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spaceL);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+
+    @media (--mediaTablet) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    @media (--mediaMobile) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .metric {
+    border: 1px solid color-mix(in lab, var(--text) 18%, transparent);
+    border-radius: 8px;
+    padding: var(--spaceL);
+    background: color-mix(in lab, var(--background) 88%, transparent);
+  }
+
+  .metricValue {
+    display: block;
+    margin-bottom: var(--spaceXS);
+  }
+
+  .metricLabel {
+    display: block;
+    max-width: 16ch;
+
+    @media (--mediaTablet) {
+      max-width: none;
+    }
+  }
+
+  .narrativeRow {
+    max-width: 860px;
+  }
+
+  .eyebrow {
+    display: block;
+    color: var(--primary);
+    letter-spacing: 0;
+    margin-bottom: var(--spaceS);
+  }
+
+  .outcomes {
+    display: grid;
+    gap: var(--spaceM);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .outcome {
+    position: relative;
+    padding-left: var(--spaceL);
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0.85em;
+      left: 0;
+      width: 8px;
+      height: 8px;
+      background: var(--primary);
+      transform: rotate(45deg);
+    }
+  }
+}

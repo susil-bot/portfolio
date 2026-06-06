@@ -2,6 +2,10 @@ import config from '~/config.json';
 
 export const navLinks = [
   {
+    label: 'About Me',
+    pathname: '/#about',
+  },
+  {
     label: 'Projects',
     pathname: '/#project-1',
   },
@@ -19,7 +23,7 @@ export const socialLinks = [
   {
     label: 'LinkedIn',
     url: `https://www.linkedin.com/in/${config.linkedin}/`,
-    icon: 'link',
+    icon: 'linkedin',
   },
   {
     label: 'Github',

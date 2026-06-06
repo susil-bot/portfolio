@@ -1,25 +1,15 @@
-import gamestackTexture2Large from '~/assets/gamestack-list-large.jpg';
-import gamestackTexture2Placeholder from '~/assets/gamestack-list-placeholder.jpg';
-import gamestackTexture2 from '~/assets/gamestack-list.jpg';
-import gamestackTextureLarge from '~/assets/gamestack-login-large.jpg';
-import gamestackTexturePlaceholder from '~/assets/gamestack-login-placeholder.jpg';
-import gamestackTexture from '~/assets/gamestack-login.jpg';
-import sliceTextureLarge from '~/assets/slice-app-large.jpg';
-import sliceTexturePlaceholder from '~/assets/slice-app-placeholder.jpg';
-import sliceTexture from '~/assets/slice-app.jpg';
-import sprTextureLarge from '~/assets/spr-lesson-builder-dark-large.jpg';
-import sprTexturePlaceholder from '~/assets/spr-lesson-builder-dark-placeholder.jpg';
-import sprTexture from '~/assets/spr-lesson-builder-dark.jpg';
 import { Footer } from '~/components/footer';
+import { projectSummaries } from '~/data/projects';
 import { baseMeta } from '~/utils/meta';
+import { About } from './about';
 import { Intro } from './intro';
 import { Profile } from './profile';
 import { ProjectSummary } from './project-summary';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import config from '~/config.json';
 import styles from './home.module.css';
 
-// Prefetch draco decoader wasm
+// Prefetch draco decoder wasm
 export const links = () => {
   return [
     {
@@ -41,8 +31,8 @@ export const links = () => {
 
 export const meta = () => {
   return baseMeta({
-    title: 'MERN Stack Developer',
-    description: `Portfolio of ${config.name}, a MERN Stack Developer building scalable React, Node.js, Next.js, GraphQL, MongoDB, and AWS applications.`,
+    title: 'Full Stack Developer — MERN · AI/LLM · AWS',
+    description: `Portfolio of ${config.name}, a Full Stack Developer specialising in MERN stack, Next.js, AI/LLM integration with LangChain and OpenAI, N8n workflow automation, and AWS cloud deployment.`,
   });
 };
 
@@ -50,13 +40,28 @@ export const Home = () => {
   const [visibleSections, setVisibleSections] = useState([]);
   const [scrollIndicatorHidden, setScrollIndicatorHidden] = useState(false);
   const intro = useRef();
-  const projectOne = useRef();
-  const projectTwo = useRef();
-  const projectThree = useRef();
+  const about = useRef();
   const details = useRef();
+  const projectElements = useRef(new Map());
+
+  const registerProject = useCallback(
+    id => element => {
+      if (element) {
+        projectElements.current.set(id, element);
+      } else {
+        projectElements.current.delete(id);
+      }
+    },
+    []
+  );
 
   useEffect(() => {
-    const sections = [intro, projectOne, projectTwo, projectThree, details];
+    const sections = [
+      intro.current,
+      about.current,
+      ...projectSummaries.map(project => projectElements.current.get(project.id)),
+      details.current,
+    ].filter(Boolean);
 
     const sectionObserver = new IntersectionObserver(
       (entries, observer) => {
@@ -64,8 +69,10 @@ export const Home = () => {
           if (entry.isIntersecting) {
             const section = entry.target;
             observer.unobserve(section);
-            if (visibleSections.includes(section)) return;
-            setVisibleSections(prevSections => [...prevSections, section]);
+            setVisibleSections(prevSections => {
+              if (prevSections.includes(section.id)) return prevSections;
+              return [...prevSections, section.id];
+            });
           }
         });
       },
@@ -79,9 +86,7 @@ export const Home = () => {
       { rootMargin: '-100% 0px 0px 0px' }
     );
 
-    sections.forEach(section => {
-      sectionObserver.observe(section.current);
-    });
+    sections.forEach(section => sectionObserver.observe(section));
 
     indicatorObserver.observe(intro.current);
 
@@ -89,7 +94,7 @@ export const Home = () => {
       sectionObserver.disconnect();
       indicatorObserver.disconnect();
     };
-  }, [visibleSections]);
+  }, []);
 
   return (
     <div className={styles.home}>
@@ -98,74 +103,26 @@ export const Home = () => {
         sectionRef={intro}
         scrollIndicatorHidden={scrollIndicatorHidden}
       />
-      <ProjectSummary
-        id="project-1"
-        sectionRef={projectOne}
-        visible={visibleSections.includes(projectOne.current)}
-        index={1}
-        title="Enterprise content platform"
-        description="Architected SSR and SSG delivery with MERN and Next.js, improving SEO and load time by 40% for high-traffic publishing workflows."
-        buttonText="View resume"
-        buttonLink="/Sobhana_Susil_Resume.pdf"
-        model={{
-          type: 'laptop',
-          alt: 'Enterprise content platform interface',
-          textures: [
-            {
-              srcSet: `${sprTexture} 1280w, ${sprTextureLarge} 2560w`,
-              placeholder: sprTexturePlaceholder,
-            },
-          ],
-        }}
+
+      <About
+        id="about"
+        sectionRef={about}
+        visible={visibleSections.includes('about')}
       />
-      <ProjectSummary
-        id="project-2"
-        alternate
-        sectionRef={projectTwo}
-        visible={visibleSections.includes(projectTwo.current)}
-        index={2}
-        title="AI workflow automation"
-        description="Integrated OpenAI and LangChain agents to automate editorial workflows, reducing manual effort by about 40%."
-        buttonText="Connect on LinkedIn"
-        buttonLink="https://www.linkedin.com/in/sobhana-susil/"
-        model={{
-          type: 'phone',
-          alt: 'Mobile application screens',
-          textures: [
-            {
-              srcSet: `${gamestackTexture} 375w, ${gamestackTextureLarge} 750w`,
-              placeholder: gamestackTexturePlaceholder,
-            },
-            {
-              srcSet: `${gamestackTexture2} 375w, ${gamestackTexture2Large} 750w`,
-              placeholder: gamestackTexture2Placeholder,
-            },
-          ],
-        }}
-      />
-      <ProjectSummary
-        id="project-3"
-        sectionRef={projectThree}
-        visible={visibleSections.includes(projectThree.current)}
-        index={3}
-        title="Cloud and DevOps delivery"
-        description="Managed AWS infrastructure, Docker containers, and Jenkins pipelines while improving API latency, release speed, and uptime."
-        buttonText="View GitHub"
-        buttonLink="https://github.com/sobhanasusil"
-        model={{
-          type: 'laptop',
-          alt: 'Cloud application dashboard',
-          textures: [
-            {
-              srcSet: `${sliceTexture} 800w, ${sliceTextureLarge} 1920w`,
-              placeholder: sliceTexturePlaceholder,
-            },
-          ],
-        }}
-      />
+
+      {projectSummaries.map((project, index) => (
+        <ProjectSummary
+          key={project.id}
+          sectionRef={registerProject(project.id)}
+          visible={visibleSections.includes(project.id)}
+          index={index + 1}
+          {...project}
+        />
+      ))}
+
       <Profile
         sectionRef={details}
-        visible={visibleSections.includes(details.current)}
+        visible={visibleSections.includes('details')}
         id="details"
       />
       <Footer />

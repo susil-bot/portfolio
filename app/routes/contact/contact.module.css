@@ -137,6 +137,11 @@
   }
 }
 
+.fields {
+  display: grid;
+  gap: var(--spaceL);
+}
+
 .botkiller {
   display: none;
 }
@@ -199,6 +204,19 @@
       transform: translate3d(0, calc(var(--space2XL) * -1), 0);
     }
   }
+}
+
+.formError,
+.formSuccess {
+  margin-top: var(--spaceS);
+}
+
+.formError {
+  color: var(--error);
+}
+
+.formSuccess {
+  color: var(--primary);
 }
 
 .contactLinks {

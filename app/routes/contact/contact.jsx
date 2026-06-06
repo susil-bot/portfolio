@@ -3,14 +3,139 @@ import { DecoderText } from '~/components/decoder-text';
 import { Divider } from '~/components/divider';
 import { Footer } from '~/components/footer';
 import { Heading } from '~/components/heading';
+import { Input } from '~/components/input';
 import { Section } from '~/components/section';
 import { Text } from '~/components/text';
 import { tokens } from '~/components/theme-provider/theme';
 import { Transition } from '~/components/transition';
+import { Form, useActionData, useNavigation } from '@remix-run/react';
+import { json } from '@remix-run/cloudflare';
+import { useEffect, useState } from 'react';
 import { cssProps, msToNum, numToMs } from '~/utils/style';
 import { baseMeta } from '~/utils/meta';
 import config from '~/config.json';
 import styles from './contact.module.css';
+
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function getEnv(context) {
+  return context?.cloudflare?.env || context?.env || {};
+}
+
+function getString(formData, key) {
+  return String(formData.get(key) || '').trim();
+}
+
+function escapeHtml(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function validateMessage({ name, email, phone, notes }) {
+  const errors = {};
+
+  if (!name) errors.name = 'Please enter your name';
+  if (!email) {
+    errors.email = 'Please enter your email';
+  } else if (!emailPattern.test(email)) {
+    errors.email = 'Please enter a valid email';
+  }
+  if (!phone) errors.phone = 'Please enter your phone number';
+  if (!notes) errors.notes = 'Please add a short note';
+
+  return errors;
+}
+
+async function sendContactEmail({ env, message }) {
+  const apiKey = env.BREVO_API_KEY;
+  const toEmail = env.CONTACT_TO_EMAIL || config.email;
+  const senderEmail = env.CONTACT_FROM_EMAIL || config.email;
+  const senderName = env.CONTACT_FROM_NAME || config.name;
+
+  if (!apiKey) {
+    throw new Error('Missing BREVO_API_KEY');
+  }
+
+  const htmlContent = `
+    <h2>New portfolio contact message</h2>
+    <p><strong>Name:</strong> ${escapeHtml(message.name)}</p>
+    <p><strong>Email:</strong> ${escapeHtml(message.email)}</p>
+    <p><strong>Phone:</strong> ${escapeHtml(message.phone)}</p>
+    <p><strong>Notes:</strong></p>
+    <p>${escapeHtml(message.notes).replace(/\n/g, '<br />')}</p>
+  `;
+
+  const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+    method: 'POST',
+    headers: {
+      accept: 'application/json',
+      'api-key': apiKey,
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify({
+      sender: { name: senderName, email: senderEmail },
+      to: [{ email: toEmail, name: config.name }],
+      replyTo: { email: message.email, name: message.name },
+      subject: `Portfolio contact from ${message.name}`,
+      htmlContent,
+      textContent: [
+        'New portfolio contact message',
+        `Name: ${message.name}`,
+        `Email: ${message.email}`,
+        `Phone: ${message.phone}`,
+        `Notes: ${message.notes}`,
+      ].join('\n'),
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    throw new Error(`Brevo email failed: ${details}`);
+  }
+}
+
+export async function action({ request, context }) {
+  const formData = await request.formData();
+  const botField = getString(formData, 'company');
+
+  if (botField) {
+    return json({ success: true });
+  }
+
+  const message = {
+    name: getString(formData, 'name'),
+    email: getString(formData, 'email'),
+    phone: getString(formData, 'phone'),
+    notes: getString(formData, 'notes'),
+  };
+  const errors = validateMessage(message);
+
+  if (Object.keys(errors).length) {
+    return json({ success: false, errors, values: message }, { status: 400 });
+  }
+
+  try {
+    await sendContactEmail({ env: getEnv(context), message });
+    return json({ success: true });
+  } catch (error) {
+    console.error(error);
+    return json(
+      {
+        success: false,
+        errors: {
+          form:
+            'Message could not be sent right now. Please email me directly or try again later.',
+        },
+        values: message,
+      },
+      { status: 500 }
+    );
+  }
+}
 
 export const meta = () => {
   return baseMeta({
@@ -21,6 +146,30 @@ export const meta = () => {
 
 export const Contact = () => {
   const initDelay = tokens.base.durationS;
+  const actionData = useActionData();
+  const navigation = useNavigation();
+  const isSubmitting = navigation.state === 'submitting';
+  const [values, setValues] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    notes: '',
+  });
+
+  useEffect(() => {
+    if (actionData?.values) {
+      setValues(actionData.values);
+    }
+
+    if (actionData?.success) {
+      setValues({ name: '', email: '', phone: '', notes: '' });
+    }
+  }, [actionData]);
+
+  const handleChange = event => {
+    const { name, value } = event.currentTarget;
+    setValues(currentValues => ({ ...currentValues, [name]: value }));
+  };
 
   return (
     <Section className={styles.contact}>
@@ -41,38 +190,88 @@ export const Contact = () => {
               data-status={status}
               style={getDelay(tokens.base.durationXS, initDelay, 0.4)}
             />
-            <Text
-              className={styles.input}
-              data-status={status}
-              style={getDelay(tokens.base.durationXS, initDelay)}
-              size="l"
-              as="p"
-            >
-              I’m available for MERN stack, React, Node.js, Next.js, GraphQL, AWS,
-              Docker, and CI/CD development work.
-            </Text>
-            <div
-              className={styles.contactLinks}
-              data-status={status}
-              style={getDelay(tokens.base.durationS, initDelay)}
-            >
-              <Button href={`mailto:${config.email}`} icon="send">
-                Email me
-              </Button>
+            <Form method="post" className={styles.fields}>
+              <input
+                className={styles.botkiller}
+                type="text"
+                name="company"
+                tabIndex={-1}
+                autoComplete="off"
+              />
+              <Input
+                className={styles.input}
+                data-status={status}
+                style={getDelay(tokens.base.durationXS, initDelay)}
+                label="Name"
+                name="name"
+                autoComplete="name"
+                value={values.name}
+                onChange={handleChange}
+                error={actionData?.errors?.name}
+                required
+              />
+              <Input
+                className={styles.input}
+                data-status={status}
+                style={getDelay(tokens.base.durationS, initDelay)}
+                label="Mail"
+                name="email"
+                type="email"
+                autoComplete="email"
+                value={values.email}
+                onChange={handleChange}
+                error={actionData?.errors?.email}
+                required
+              />
+              <Input
+                className={styles.input}
+                data-status={status}
+                style={getDelay(tokens.base.durationS, initDelay, 1.2)}
+                label="Number"
+                name="phone"
+                type="tel"
+                autoComplete="tel"
+                value={values.phone}
+                onChange={handleChange}
+                error={actionData?.errors?.phone}
+                required
+              />
+              <Input
+                multiline
+                className={styles.input}
+                data-status={status}
+                style={getDelay(tokens.base.durationM, initDelay)}
+                label="Notes"
+                name="notes"
+                value={values.notes}
+                onChange={handleChange}
+                error={actionData?.errors?.notes}
+                required
+                maxLength={1200}
+              />
+              {!!actionData?.errors?.form && (
+                <Text className={styles.formError} role="alert" size="s" as="p">
+                  {actionData.errors.form}
+                </Text>
+              )}
+              {!!actionData?.success && (
+                <Text className={styles.formSuccess} role="status" size="s" as="p">
+                  Message sent. I’ll get back to you soon.
+                </Text>
+              )}
               <Button
-                secondary
-                href={`https://www.linkedin.com/in/${config.linkedin}/`}
-                icon="link"
+                className={styles.button}
+                data-status={status}
+                data-sending={isSubmitting}
+                style={getDelay(tokens.base.durationM, initDelay)}
+                icon="send"
+                loading={isSubmitting}
+                loadingText="Sending"
+                disabled={isSubmitting}
               >
-                LinkedIn
+                Submit
               </Button>
-              <Button secondary href={`https://github.com/${config.github}`} icon="github">
-                GitHub
-              </Button>
-              {/* <Button secondary href={config.resume} icon="link">
-                Resume
-              </Button> */}
-            </div>
+            </Form>
             <Text
               className={styles.input}
               data-status={status}
