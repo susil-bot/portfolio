@@ -109,14 +109,11 @@ export async function action({ request, context }) {
     await sendContactEmail({ env: getEnv(context), message });
     return json({ success: true });
   } catch (error) {
-    console.error(error);
+    console.error('Contact form error:', error?.message || error);
     return json(
       {
         success: false,
-        errors: {
-          form:
-            'Message could not be sent right now. Please email me directly or try again later.',
-        },
+        errors: { form: error?.message || 'Unknown error' },
         values: message,
       },
       { status: 500 }
